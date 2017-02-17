@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * @file
+ * Return lists of files using the Unix locate command.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function locate_menu() {
+  $items['admin/config/search/locate'] = array(
+    'title' => t('Locate settings'),
+    'description' => t('Configure locate search results'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('locate_settings'),
+    'access arguments' => array('administer locate'),
+    'file' => 'locate.admin.inc',
+  );
+  $items['locate/search'] = array(
+    'title' => t('Locate search folders'),
+    'description' => t('Locate folders search'),
+    'page callback' => 'locate_search_folders_page',
+    'access arguments' => array('search locate folders'),
+  );
+  $items['locate/search/%'] = array(
+    'title' => 'Locate search',
+    'description' => 'Locate folders search',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('locate_search_form'),
+    'access arguments' => array('search locate folders'),
+    'file' => 'locate.search.inc',
+  );
+  $items['locate/download'] = array(
+    'title' => t('Download file'),
+    'page callback' => 'locate_download_uri',
+    'access arguments' => array('search locate folders'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function locate_permission() {
+  return array(
+    'administer locate' =>  array(
+      'title' => t('Administer locate'),
+      'description' => t('Configure locate search folders.'),
+    ),
+    'search locate folders' =>  array(
+      'title' => t('Search locate folders'),
+      'description' => t('Search locate folders and view results.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_stream_wrappers().
+ */
+function locate_stream_wrappers() {
+  return array(
+    'locate' => array(
+      'name' => t('Locate search files'),
+      'class' => 'LocateStreamWrapper',
+      'description' => t('Files searchable by the locate module.'),
+      'type' => STREAM_WRAPPERS_READ_VISIBLE,
+    ),
+  );
+}
+
+/**
+ * Locate search folders page.
+ */
+function locate_search_folders_page() {
+  $title = check_plain(variable_get('locate_search_title', NULL));
+  $path = check_plain(variable_get('locate_search_drupal_path', NULL));
+  $output = l($title, $path);
+  return $output;
+}
+
+/**
+ * Construct the file download uri.
+ */
+function locate_download_uri() {
+  $filename = check_plain($_GET['filename']);
+  if (empty($filename) || empty($_GET['token']) || !drupal_valid_token($_GET['token'], 'download_locate_file' . $filename)) {
+    return MENU_ACCESS_DENIED;
+  }
+
+  locate_force_download('locate://' . $filename);
+}
+
+/**
+ * Helper module for downloading files.
+ *
+ * @param string $uri
+ *   The uri of the file the download.
+ */
+function locate_force_download($uri) {
+  if (file_exists($uri)) {
+    // Turn off Apache gzip compression.
+    apache_setenv('no-gzip', '1');
+    apache_setenv('dont-vary', '1');
+
+    // Turn off php zlib compression.
+    ini_set('zlib.output_compression', 0);
+
+    // Get filename from the uri.
+    $filename = drupal_basename($uri);
+
+    // Get mime type.
+    $mime_type = file_get_mimetype($uri);
+
+    // Build headers.
+    $headers = array(
+      'Expires' => '-1',
+      'Content-Type' => $mime_type,
+      'Content-Disposition' => 'attachment; filename=' . $filename,
+      'Content-Transfer-Encoding' => 'binary',
+      'Content-Length' => filesize($uri),
+    );
+
+    // Add IE only headers. This is only needed for IE <= 7.
+    if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== FALSE)) {
+      header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+      header('Pragma: public');
+    }
+    else {
+      header('Pragma: no-cache');
+    }
+
+    // Start file download.
+    file_transfer($uri, $headers);
+  }
+}

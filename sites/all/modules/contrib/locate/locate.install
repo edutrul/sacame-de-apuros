@@ -1,0 +1,16 @@
+<?php
+/**
+ * @file
+ * locate.install
+ *
+ * Install, update and uninstall functions for the locate module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function locate_uninstall() {
+  variable_del('locate_search_drupal_path');
+  variable_del('locate_search_title');
+  variable_del('locate_search_root');
+}

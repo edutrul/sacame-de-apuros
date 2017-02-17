@@ -1,0 +1,3 @@
+[Sun Feb 12 23:09:07.067396 2017] [:error] [pid 22333] [client 201.230.248.249:22073] PHP Parse error:  syntax error, unexpected '}' in /var/www/html/sacame-de-apuros/sites/all/themes/apuros/template.php on line 10
+[Sun Feb 12 23:09:51.144343 2017] [:error] [pid 22332] [client 201.230.248.249:22025] PHP Parse error:  syntax error, unexpected '}' in /var/www/html/sacame-de-apuros/sites/all/themes/apuros/template.php on line 10
+[Sun Feb 12 23:09:54.488924 2017] [:error] [pid 22330] [client 201.230.248.249:22026] PHP Parse error:  syntax error, unexpected '}' in /var/www/html/sacame-de-apuros/sites/all/themes/apuros/template.php on line 10
